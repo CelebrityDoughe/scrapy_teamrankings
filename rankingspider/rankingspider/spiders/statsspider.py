@@ -4,6 +4,7 @@ import re
 
 from scrapy.contrib.spiders.crawl import CrawlSpider
 from scrapy.http.request import Request
+from scrapy.selector import Selector
 
 from bs4 import BeautifulSoup
 
@@ -20,75 +21,56 @@ class StatsSpider(CrawlSpider):
     sport_url = {'nfl': 'nfl', 'ncf': 'college-footbal',
                          'mlb': 'mlb', 'nba': 'nba', 'ncb': 'ncaa-basketball'}
 
-    # def __init__(self, schedule=None, *args, **kwargs):
-    #     self.schedule = schedule
-    #     super(StatsSpider, self).__init__(*args, **kwargs)
-
     def start_requests(self):
-        # if self.schedule:
-        #     schedule = get_schedule_by_id(self.schedule)
-        #     for cat in self.stats_categories:
-        #         request = Request('%s/%s'%(schedule.matchup_url, cat))
-        #         request.meta['category'] = cat
-        #         request.meta['schedule'] = schedule.id
-        #         yield request
-        # else:
         for team in get_all_teams():
-            request = Request('%s/%s/team/%s' % (
-                self.url, self.sport_url[team.sport], team.url))
+            url = '%s/%s/team/%s' % (
+                self.url, self.sport_url[team.sport], team.url)
+
+            request = Request(url, callback=self.schedule)
 
             yield request
+
+    def schedule(self, response):
+        sel = Selector(response)
+
+        # for the schedule
+        match_url = []
+        table = sel.xpath("//table[@class='tr-table datatable scrollable']")
+
+        headers = table[0].xpath("thead/tr/th/text()").extract()
+
+        if table:
+            for tr in table[0].xpath("tbody/tr"):
+                item = StatsItem()
+                urls = tr.xpath("td/a/@href").extract()
+                part_a = tr.xpath("td/a/text()").extract()
+
+                part_b = []
+
+                c = 0
+                for td in tr.xpath("td"):
+                    print td.xpath("text()").extract()
+
+                    # skip for date and name
+                    c += 1
+                    if c <= 2:
+                        continue
+
+                    # if there is no text, append blank
+                    text = td.xpath("text()").extract()
+                    if not text or text[0] == '--':
+                        part_b += ['']
+                    else:
+                        part_b += text
+
+                match_url += urls[0]
+
+                item['stat_type'] = 'schedule'
+                item['data'] = part_a + urls + part_b
+                item['header'] = headers
+
+                yield item
 
     def parse(self, response):
         item = StatsItem()
         print response.url
-        # soup = BeautifulSoup(response.body)
-        # data = []
-        # for module in soup.select('#content .module-in'):
-        #     item = StatsItem()
-        #     item['schedule'] = response.meta['schedule']
-        #     item['category'] = response.meta['category']
-        #     title = module.parent.h4.text
-        #     head = []
-        #     process_columns = {}
-        #     for tr in module.select('thead tr'):
-        #         ths = []
-        #         for index, th in enumerate(tr.select('th')):
-        #             if th.text.strip() in self.process_columns[item['category']].keys():
-        #                 processor = self.process_columns[item['category']][th.text.strip()]
-        #                 process_columns[index] = processor
-        #                 ths.append({'title': processor(th.text.strip()),
-        #                             'colspan': int(th.get('colspan', 1))})
-        #             else:
-        #                 ths.append({'title': th.text.strip(),
-        #                             'colspan': int(th.get('colspan', 1))})
-        #         head.append(ths)
-        #     body = []
-        #     for tr in module.select('tbody tr'):
-        #         tds = []
-        #         for index, td in enumerate(tr.select('td')):
-        #             text = td.text.strip()
-        #             if index not in process_columns.keys():
-        #                 if not text:
-        #                     # no text for this td. it should be special td.
-        #                     if td.find(class_=re.compile('tr_arrowed')):
-        #                         arrowed_el = td.find(class_=re.compile('tr_arrowed_\d'))
-        #                         if arrowed_el:
-        #                             arrowed_level = int(re.match('tr_arrowed_(\d)', arrowed_el['class'][0]).group(1))
-        #                             # 1. adv column for stat splits
-        #                             if td.find(class_=re.compile('tr_arrowed_r')):
-        #                                 tds.append(arrowed_level)
-        #                             elif td.find(class_=re.compile('tr_arrowed_l')):
-        #                                 tds.append(arrowed_level*-1)
-        #                             else:
-        #                                 raise Exception('Invalid class for adv column')
-        #                         else:
-        #                             tds.append(0)
-        #                 else:
-        #                     tds.append(text)
-        #             else:
-        #                 tds.append(process_columns[index](text))
-        #         body.append(tds)
-        #     data.append({'title': title, 'head': head, 'body': body})
-        # item['data'] = json.dumps(data)
-        # yield item

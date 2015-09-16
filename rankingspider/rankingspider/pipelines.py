@@ -3,9 +3,11 @@ import re
 
 from rankingspider.items import TeamItem, ScheduleItem, StatsItem
 from rankingspider.mappings import(
-    Team, session, Schedule, Stats, get_team_by_url, get_schedule,
+    Team, session, Stats, get_team_by_url, get_schedule,
     get_stats
 )
+
+from stats.models import Schedule
 
 
 class RankingspiderPipeline(object):
@@ -41,13 +43,41 @@ class RankingspiderPipeline(object):
             session.add(schedule)
             session.commit()
         elif isinstance(item, StatsItem):
-            stats = get_stats(item['schedule'], item['category'])
-            if not stats:
-                stats = Stats()
-                stats.schedule = item['schedule']
-                stats.category = item['category']
-            stats.data = item['data']
-            session.add(stats)
-            session.commit()
+            if item['stat_type'] == 'schedule':
+
+                check = Schedule.objects.filter(matchup_url=item['data'][2])
+
+                if not check:
+                    schedule = Schedule(
+                        date=item['data'][0],
+                        opponent=item['data'][1],
+                        matchup_url=item['data'][2],
+                        opponent_url=item['data'][3],
+                        result=item['data'][4],
+                        location=item['data'][5],
+                        wl=item['data'][6],
+                        conf=item['data'][7]
+                    )
+
+                    if 'Run Line' in item['header']:
+                        if item['data'][8]:
+                            schedule.run_line = item['data'][8]
+                        if item['data'][9]:
+                            schedule.odds = item['data'][9]
+                        if item['data'][10]:
+                            schedule.total = item['data'][10]
+                        if item['data'][11]:
+                            schedule.money = item['data'][11]
+                    else:
+                        if item['data'][8]:
+                            schedule.spread = item['data'][8]
+                        if item['data'][9]:
+                            schedule.total = item['data'][9]
+                        if item['data'][10]:
+                            schedule.money = item['data'][10]
+
+                    print Schedule
+
+                    schedule.save()
 
         return item

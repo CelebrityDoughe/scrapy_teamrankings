@@ -30,6 +30,18 @@ class Schedule(Base):
     __tablename__ = 'schedules_schedule'
 
     id = Column(Integer, primary_key=True)
+    date = Column(String(200))
+    opponent = Column(String(200))
+    opponent_url = Column(String(200))
+    matchup_url = Column(String(200))
+    result = Column(String(200))
+    location = Column(String(200))
+    wl = Column(String(200))
+    conf = Column(String(200))
+    spread = Column(Integer, nullable=True)
+    total = Column(String(200))
+    spread = Column(Integer, nullable=True)
+
     team = Column('team_id', Integer, ForeignKey('teams_team.id'))
     opponent = Column('opponent_id', Integer, ForeignKey('teams_team.id'))
     date = Column(Date)
@@ -60,7 +72,7 @@ session = Session()
 
 
 def get_all_teams():
-    return session.query(Team).all()
+    return [session.query(Team).all()[0]]
 
 
 def get_team_by_url(team_url, sport):

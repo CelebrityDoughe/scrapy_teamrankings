@@ -5,6 +5,7 @@
 #
 #     http://doc.scrapy.org/topics/settings.html
 #
+import os, sys
 
 BOT_NAME = 'rankingspider'
 
@@ -28,3 +29,9 @@ try:
     from local_settings import *  # noqa
 except ImportError:
     pass
+
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+sys.path.append(BASE_DIR)
+
+os.environ['DJANGO_SETTINGS_MODULE'] = 'teamrankings.settings'
