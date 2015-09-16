@@ -22,7 +22,7 @@ class ScheduleSpider(CrawlSpider):
         super(ScheduleSpider, self).__init__(*args, **kwargs)
 
     def parse(self, response):
-        soup = BeautifulSoup(response.body)
+        soup = BeautifulSoup(response.body, 'lxml')
         for tr in soup.select('#content-main .module-in tbody tr'):
             if tr.select('a'):
                 # date is clickable

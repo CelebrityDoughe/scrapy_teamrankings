@@ -12,15 +12,10 @@ class RankingspiderPipeline(object):
     def process_item(self, item, spider):
         if isinstance(item, TeamItem):
             team = Team()
-            print "--------------------------------------------------------1"
-            print item
             if not get_team_by_url(item['url'], item['sport']):
                 team.url = item['url']
                 team.name = item['name']
                 team.sport = item['sport']
-                print "---------------------------------------------------------2"
-                print item
-                print team.sport
 
                 session.add(team)
                 session.commit()

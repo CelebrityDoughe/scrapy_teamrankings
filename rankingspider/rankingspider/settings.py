@@ -15,7 +15,7 @@ NEWSPIDER_MODULE = 'rankingspider.spiders'
 #USER_AGENT = 'rankingspider (+http://www.yourdomain.com)'
 
 MYSQL_USERNAME = 'root'
-MYSQL_PASSWORD = 'Hermitg24'
+MYSQL_PASSWORD = ''
 MYSQL_DB_NAME = 'teamrankings'
 MYSQL_DB_HOST = '127.0.0.1'
 MYSQL_DB_PORT = '3306'
