@@ -22,11 +22,23 @@ class StatsSpider(CrawlSpider):
                          'mlb': 'mlb', 'nba': 'nba', 'ncb': 'ncaa-basketball'}
 
     def start_requests(self):
-        for team in get_all_teams():
-            url = '%s/%s/team/%s' % (
+        # for schedule
+        teams = get_all_teams()
+        # for team in teams:
+        #     url = '%s/%s/team/%s' % (
+        #         self.url, self.sport_url[team.sport], team.url)
+
+        #     request = Request(url, callback=self.schedule)
+        #     request.meta['team'] = team.id
+
+        #     yield request
+
+        # for AST Result
+        for team in teams:
+            url = '%s/%s/team/%s/ats-results' % (
                 self.url, self.sport_url[team.sport], team.url)
 
-            request = Request(url, callback=self.schedule)
+            request = Request(url, callback=self.ast_results)
             request.meta['team'] = team.id
 
             yield request
@@ -50,7 +62,6 @@ class StatsSpider(CrawlSpider):
 
                 c = 0
                 for td in tr.xpath("td"):
-                    print td.xpath("text()").extract()
 
                     # skip for date and name
                     c += 1
@@ -72,6 +83,49 @@ class StatsSpider(CrawlSpider):
                 item['header'] = headers
 
                 yield item
+    
+    def ast_results(self, response):
+        sel = Selector(response)
+
+        # for the ast result
+        table = sel.xpath("//table[@class='tr-table scrollable datatable no-initial-sort']")
+
+        headers = table[0].xpath("thead/tr/th/text()").extract()
+
+        if table:
+            for tr in table[0].xpath("tbody/tr"):
+                item = StatsItem()
+                data = []
+                c = 0
+                for td in tr.xpath("td"):
+                    # if there is no text, append blank
+                    c += 1
+
+                    text = td.xpath("text()").extract()
+                    if not text:
+                        text = td.xpath("a/text()").extract()
+                    if not text:
+                        text = td.xpath("strong/text()").extract()
+
+                    if not text or text[0] == '--':
+                        text = ['']
+
+                    data += text
+
+                    # 2nd column, add opponent link
+                    if c == 3:
+                        text = td.xpath("a/@href").extract()
+                        if not text:
+                            text = ['']
+                        data += text
+
+                item['team'] = response.meta['team']
+                item['stat_type'] = 'ast_results'
+                item['data'] = data
+                item['header'] = headers
+
+                yield item
+
     def OverUnderTrends(self, response):
         sel = Selector(response)
 

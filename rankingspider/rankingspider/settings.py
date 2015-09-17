@@ -7,6 +7,15 @@
 #
 import os, sys
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+sys.path.append(BASE_DIR)
+
+os.environ['DJANGO_SETTINGS_MODULE'] = 'teamrankings.settings'
+
+from django.core.wsgi import get_wsgi_application
+application = get_wsgi_application()
+
+
 BOT_NAME = 'rankingspider'
 
 SPIDER_MODULES = ['rankingspider.spiders']
@@ -31,7 +40,4 @@ except ImportError:
     pass
 
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-sys.path.append(BASE_DIR)
 
-os.environ['DJANGO_SETTINGS_MODULE'] = 'teamrankings.settings'
