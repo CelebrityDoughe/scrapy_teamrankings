@@ -72,7 +72,7 @@ session = Session()
 
 
 def get_all_teams():
-    return [session.query(Team).all()[0]]
+    return session.query(Team).all()
 
 
 def get_team_by_url(team_url, sport):

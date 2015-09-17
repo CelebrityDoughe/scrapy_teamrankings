@@ -2,7 +2,7 @@
 import json
 
 from django.db import models
-
+from teams.models import Team
 # from schedules.models import Schedule
 
 
@@ -74,6 +74,7 @@ class OverUnderTrend(models.Model):
 
 
 class Schedule(models.Model):
+    team = models.ForeignKey(Team)
     date = models.CharField(max_length=10, blank=True)
     opponent = models.CharField(max_length=100, blank=True)
     matchup_url = models.URLField()

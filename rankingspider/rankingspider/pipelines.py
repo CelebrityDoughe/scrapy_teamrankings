@@ -49,6 +49,7 @@ class RankingspiderPipeline(object):
 
                 if not check:
                     schedule = Schedule(
+                        team_id = item['team'],
                         date=item['data'][0],
                         opponent=item['data'][1],
                         matchup_url=item['data'][2],

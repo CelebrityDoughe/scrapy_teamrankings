@@ -26,5 +26,6 @@ class ScheduleItem(Item):
 
 class StatsItem(Item):
     stat_type = Field()  # type like AstResult, Schedule etc
+    team = Field()
     data = Field()
     header = Field()

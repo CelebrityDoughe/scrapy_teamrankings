@@ -1,4 +1,4 @@
-BeautifulSoup
+BeautifulSoup4
 cffi
 characteristic
 cryptography
@@ -20,3 +20,4 @@ Twisted
 w3lib
 wheel
 zope.interface
+sqlalchemy
