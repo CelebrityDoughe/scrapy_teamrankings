@@ -94,8 +94,6 @@ class RankingspiderPipeline(object):
     def _save_over_under_trends(self, item):
         item = self._clean_item_data(item)
 
-        print item['data'], item['team']
-
         ou_trend = OverUnderTrend.objects.filter(trend=item['data'][0],
                                                  team_id=item['team'])
 
