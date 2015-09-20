@@ -21,6 +21,7 @@ class Team(Base):
     url = Column(String(200))
     name = Column(String(128))
     sport = Column(String(10))
+    team_id = Column(Integer)
 
     def __repr__(self):
         return '<Team(%s)>' % self.name
@@ -73,6 +74,7 @@ session = Session()
 
 def get_all_teams():
     return session.query(Team).all()
+    # return session.query(Team).filter(Team.team_id == None)
 
 
 def get_team_by_url(team_url, sport):

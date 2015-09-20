@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 import json
 import re
+import datetime
 
 from scrapy.contrib.spiders.crawl import CrawlSpider
 from scrapy.http.request import Request
+from scrapy.http.request.form import FormRequest
 from scrapy.selector import Selector
 
 from bs4 import BeautifulSoup
@@ -24,6 +26,17 @@ class StatsSpider(CrawlSpider):
     def start_requests(self):
         # for schedule
         teams = get_all_teams()
+
+        #  updates the team_id
+        # for team in teams:
+        #     url = '%s/%s/team/%s/over-under-trends' % (
+        #         self.url, self.sport_url[team.sport], team.url)
+
+        #     request = Request(url, callback=self.team_id)
+        #     request.meta['team'] = team.id
+
+        #     yield request
+
         # for team in teams:
         #     url = '%s/%s/team/%s' % (
         #         self.url, self.sport_url[team.sport], team.url)
@@ -34,14 +47,41 @@ class StatsSpider(CrawlSpider):
         #     yield request
 
         # for AST Result
+        # for team in teams:
+        #     url = '%s/%s/team/%s/ats-results' % (
+        #         self.url, self.sport_url[team.sport], team.url)
+
+        #     request = Request(url, callback=self.ast_results)
+        #     request.meta['team'] = team.id
+
+        #     yield request
+
+        # Over/Under Trend
         for team in teams:
-            url = '%s/%s/team/%s/ats-results' % (
+
+            url = '%s/%s/team/%s/over-under-trends' % (
                 self.url, self.sport_url[team.sport], team.url)
 
-            request = Request(url, callback=self.ast_results)
+            request = Request(url, callback=self.over_under_trends_get)
             request.meta['team'] = team.id
 
             yield request
+
+    def team_id(self, response):
+        sel = Selector(response)
+        try:
+            team_id = sel.xpath("//input[@name='team_id']/@value").extract()[0]
+        except:
+            team_id = 0
+
+        item = StatsItem()
+
+        item['team'] = response.meta['team']
+        item['stat_type'] = 'team_id'
+        item['data'] = team_id
+        item['header'] = []
+
+        yield item
 
     def schedule(self, response):
         sel = Selector(response)
@@ -126,47 +166,30 @@ class StatsSpider(CrawlSpider):
 
                 yield item
 
-    def OverUnderTrends(self, response):
+    def over_under_trends_get(self, response):
+        request = FormRequest.from_response(
+            response,
+            callback=self.over_under_trends
+        )
+        request.meta['team'] = response.meta['team']
+
+        return request
+
+    def over_under_trends(self, response):
         sel = Selector(response)
 
-        # for the schedule
-        match_url = []
-        table = sel.xpath("//table[@class='tr-table datatable scrollable']")
+        for tr in sel.xpath('//tr'):
+            item = StatsItem()
+            data = tr.xpath('td/text()').extract()
+            print data
 
-        headers = table[0].xpath("thead/tr/th/text()").extract()
+            item['team'] = response.meta['team']
+            item['stat_type'] = 'over_under_trends'
+            item['data'] = data
+            item['header'] = {}
 
-        if table:
-            for tr in table[0].xpath("tbody/tr"):
-                item = StatsItem()
-                urls = tr.xpath("td/a/@href").extract()
-                part_a = tr.xpath("td/a/text()").extract()
+            yield item
 
-                part_b = []
-
-                c = 0
-                for td in tr.xpath("td"):
-                    print td.xpath("text()").extract()
-
-                    # skip for date and name
-                    c += 1
-                    if c <= 2:
-                        continue
-
-                    # if there is no text, append blank
-                    text = td.xpath("text()").extract()
-                    if not text or text[0] == '--':
-                        part_b += ['']
-                    else:
-                        part_b += text
-
-                match_url += urls[0]
-
-                item['team'] = response.meta['team']
-                item['stat_type'] = 'schedule'
-                item['data'] = part_a + urls + part_b
-                item['header'] = headers
-
-                yield item
     def parse(self, response):
         item = StatsItem()
         print response.url

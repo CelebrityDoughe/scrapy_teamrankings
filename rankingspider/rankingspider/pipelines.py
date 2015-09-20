@@ -7,16 +7,33 @@ from rankingspider.mappings import(
     get_stats
 )
 
-from stats.models import Schedule, AstResult
-
+from stats.models import Schedule, AstResult, OverUnderTrend
+from teams.models import Team
 
 class RankingspiderPipeline(object):
+
+    def _clean_item_data(self, item):
+        data = []
+        for val in item['data']:
+            if val == '--' or not val:
+                val = 0
+
+            data += [val]
+
+        item['data'] = data
+
+        return item
+
+    def _save_team_id(self, item):
+        team = Team.objects.get(id=item['team'])
+        team.team_id = item['data']
+        team.save()
 
     def _save_schedule(self, item):
         check = Schedule.objects.filter(matchup_url=item['data'][2])
         if not check:
             schedule = Schedule(
-                team_id = item['team'],
+                team_id=item['team'],
                 date=item['data'][0],
                 opponent=item['data'][1],
                 matchup_url=item['data'][2],
@@ -74,6 +91,33 @@ class RankingspiderPipeline(object):
 
             ast_result.save()
 
+    def _save_over_under_trends(self, item):
+        item = self._clean_item_data(item)
+
+        print item['data'], item['team']
+
+        ou_trend = OverUnderTrend.objects.filter(trend=item['data'][0],
+                                                 team_id=item['team'])
+
+        if not ou_trend:
+            ou_trend = OverUnderTrend(
+                team_id=item['team'],
+                trend=item['data'][0],
+                over_record=item['data'][1],
+                over=item['data'][2],
+                uder=item['data'][3],
+                total=item['data'][4]
+            )
+        else:
+            ou_trend = ou_trend[0]
+            ou_trend.over_record = item['data'][1]
+            ou_trend.over = item['data'][2]
+            ou_trend.uder = item['data'][3]
+            ou_trend.total = item['data'][4]
+
+        ou_trend.save()
+
+
     def process_item(self, item, spider):
         if isinstance(item, TeamItem):
             team = Team()
@@ -106,9 +150,14 @@ class RankingspiderPipeline(object):
             session.add(schedule)
             session.commit()
         elif isinstance(item, StatsItem):
-            if item['stat_type'] == 'schedule':
+            if item['stat_type'] == 'team_id':
+                self._save_team_id(item)
+            elif item['stat_type'] == 'schedule':
                 self._save_schedule(item)
             elif item['stat_type'] == 'ast_results':
                 self._save_ast_results(item)
+            elif item['stat_type'] == 'over_under_trends':
+                self._save_over_under_trends(item)
+                
 
         return item
